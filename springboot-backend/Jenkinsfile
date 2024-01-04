@@ -1,0 +1,80 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('dockerpwd')
+        DOCKER_IMAGE_NAME = 'architdev/spring-test'
+    }
+
+    stages {
+        stage('git clone') {
+            steps {
+                checkout scmGit(branches: [[name: '*/deploy']], extensions: [], userRemoteConfigs: [[credentialsId: 'githubpwd', url: 'https://github.com/ARCHIT1607/Jekins-CICD.git']])
+            }
+        }
+
+        stage('docker build & Tag') {
+            steps {
+                script {
+                    def currentBuildNumber = env.BUILD_NUMBER
+                    def dockerImageTag = "architdev/spring-test:${currentBuildNumber}"
+                    dir('springboot-backend') {
+                        // Use double quotes to allow variable interpolation
+                        bat "docker build -t ${dockerImageTag} ."
+                    }
+                }
+            }
+        }
+
+        stage('docker push to registry') {
+            steps {
+                script {
+                    def currentBuildNumber = env.BUILD_NUMBER
+                    def dockerImageTag = "architdev/spring-test:${currentBuildNumber}"
+                    // Log in to Docker Hub using credentials
+                    withCredentials([string(credentialsId: 'dockerpwd', variable: 'DOCKER_HUB_CREDENTIALS')]) {
+                        bat "docker login -u architdev -p ${DOCKER_HUB_CREDENTIALS}"
+                    }
+
+                    // Push Docker image to Docker Hub
+                    bat "docker push ${dockerImageTag}"
+                }
+            }
+        }
+        
+        stage('run k8 files') {
+            steps {
+                script {
+                     dir('springboot-backend/k8') {
+                        // Use double quotes to allow variable interpolation
+                        bat "kubectl apply -f ."
+                    }
+                }
+            }
+        }
+        
+                stage('User Confirmation') {
+            steps {
+                script {
+                    // Prompt user for confirmation
+                    def userInput = input(
+                        id: 'userConfirmation',
+                        message: 'Do you want to proceed to the next stage?',
+                        parameters: [booleanParam(defaultValue: true, description: 'Proceed?', name: 'CONFIRM')]
+                    )
+
+                    // Check user input
+                    if (userInput) {
+                        echo 'User confirmed. Proceeding to the next stage.'
+                       dir('springboot-backend/k8') {
+                        // Use double quotes to allow variable interpolation
+                        bat "kubectl delete -f ."
+                    }
+                    } else {
+                        error 'User declined. Stopping the pipeline.'
+                    }
+                }
+            }
+        }
+    }
+}
