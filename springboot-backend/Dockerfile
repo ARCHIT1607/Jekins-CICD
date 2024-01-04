@@ -11,7 +11,7 @@ COPY ./ .
 RUN mvn clean install -DskipTests
 
 # Copy the application JAR file to the container
-COPY target/springboot-backend-0.0.1-SNAPSHOT.jar /app/app.jar
+# COPY target/springboot-backend-0.0.1-SNAPSHOT.jar /app/app.jar
 
 # Use a smaller base image for the final image
 FROM openjdk:17-slim
