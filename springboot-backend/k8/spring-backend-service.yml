@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name:  spring-backend-svc
+spec:
+  selector:
+    app:  spring-backend-deployment
+  type:  LoadBalancer
+  ports:
+  - port:  8080
+    targetPort:  8080
