@@ -23,6 +23,14 @@ public class Employee {
 		
 	}
 	
+	public Employee(long id, String firstName, String lastName, String emailId) {
+		super();
+		this.id = id;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.emailId = emailId;
+	}
+
 	public Employee(String firstName, String lastName, String emailId) {
 		super();
 		this.firstName = firstName;
