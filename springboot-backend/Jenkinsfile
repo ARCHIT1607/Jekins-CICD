@@ -90,7 +90,9 @@ pipeline {
                     // Commit and push the changes back to the deployment Git repo
                     bat "git add ${deploymentYamlPath}"
                     bat 'git commit -m "Update Docker image tag in deployment.yml"'
-                    bat 'git push origin main'
+                    withCredentials([usernamePassword(credentialsId: 'githubpwd', passwordVariable: 'pass', usernameVariable: 'user')]) {
+                        sh "git push http://$user:$pass@github.com/ARCHIT1607/3-tier-argocd-config.git main"
+                    }
                 }
             }
         }
