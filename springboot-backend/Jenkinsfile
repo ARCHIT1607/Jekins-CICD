@@ -24,7 +24,7 @@ pipeline {
             steps {
                 script {
                     def currentBuildNumber = env.BUILD_NUMBER
-                    def dockerImageTag = "architdev/spring-test:${currentBuildNumber}"
+                    def dockerImageTag = env.DOCKER_IMAGE_NAME:${currentBuildNumber}
                     dir('springboot-backend') {
                         // Use double quotes to allow variable interpolation
                         bat "docker build -t ${dockerImageTag} ."
@@ -37,7 +37,7 @@ pipeline {
             steps {
                 script {
                     def currentBuildNumber = env.BUILD_NUMBER
-                    def dockerImageTag = ${DOCKER_IMAGE_NAME}:${currentBuildNumber}
+                    def dockerImageTag = env.DOCKER_IMAGE_NAME:${currentBuildNumber}
                     // Log in to Docker Hub using credentials
                     withCredentials([string(credentialsId: 'dockerpwd', variable: 'DOCKER_HUB_CREDENTIALS')]) {
                         bat "docker login -u architdev -p ${DOCKER_HUB_CREDENTIALS}"
@@ -55,7 +55,7 @@ pipeline {
                 
                script{
                 def currentBuildNumber = env.BUILD_NUMBER
-                def dockerImageTag = ${DOCKER_IMAGE_NAME}:${currentBuildNumber}
+                def dockerImageTag = env.DOCKER_IMAGE_NAME:${currentBuildNumber}
                  bat "docker rmi ${dockerImageTag}"
                }
             }
@@ -66,7 +66,7 @@ pipeline {
                 
                 script {
                 def currentBuildNumber = env.BUILD_NUMBER
-                def dockerImageTag = ${DOCKER_IMAGE_NAME}:${currentBuildNumber}
+                def dockerImageTag = env.DOCKER_IMAGE_NAME:${currentBuildNumber}
                     checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'githubpwd', url: 'https://github.com/ARCHIT1607/3-tier-argocd-config.git']])
 
                     // Update the deployment.yml file with the new Docker image tag
