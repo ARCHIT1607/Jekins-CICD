@@ -88,7 +88,7 @@ pipeline {
 
 
                     // Commit and push the changes back to the deployment Git repo
-                    bat 'git add Dev/spring-backend-deployment.yml'
+                    bat "git add ${deploymentYamlPath}"
                     bat 'git commit -m "Update Docker image tag in deployment.yml"'
                     bat 'git push origin main'
                 }
