@@ -81,7 +81,7 @@ pipeline {
                 powershell "Get-Content ${deploymentYamlPath}"
 
             // Update the deployment.yml file with the new Docker image tag using PowerShell
-                powershell "(Get-Content ${deploymentYamlPath}) -replace 'architdev/spring-test.*', '${dockerImageTag}' | Set-Content ${deploymentYamlPath}"
+                powershell "(Get-Content ${deploymentYamlPath}) -replace 'architdev/spring-backend.*', '${dockerImageTag}' | Set-Content ${deploymentYamlPath}"
 
             // Display the content of deployment.yml after replacement
                 powershell "Get-Content ${deploymentYamlPath}"
