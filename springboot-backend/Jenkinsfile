@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_HUB_CREDENTIALS = credentials('dockerpwd')
         DOCKER_IMAGE_NAME = 'architdev/spring-backend'
+        GITHUB_TOKEN = credentials('github_cred')
     }
 
     stages {
@@ -71,7 +72,8 @@ pipeline {
                 def currentBuildNumber = env.BUILD_NUMBER
                 def dockerImageName = 'architdev/spring-backend'
                 def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'githubpwd', url: 'https://github.com/ARCHIT1607/3-tier-argocd-config.git']])
+                def githubTokenCredentials = credentials('githubpwd')
+                git branch: 'main', credentialsId: 'githubpwd', url: 'https://github.com/ARCHIT1607/3-tier-argocd-config.git'
 
                     // Update the deployment.yml file with the new Docker image tag
                    
@@ -88,11 +90,14 @@ pipeline {
 
 
                     // Commit and push the changes back to the deployment Git repo
-                    bat "git add ${deploymentYamlPath}"
-                    bat 'git commit -m "Update Docker image tag in deployment.yml"'
-                    withCredentials([usernamePassword(credentialsId: 'githubpwd', passwordVariable: 'pass', usernameVariable: 'user')]) {
-                        bat "git push http://$user:$pass@github.com/ARCHIT1607/3-tier-argocd-config.git main:refs/heads/main"
+                    
+              
+                bat "git add ${deploymentYamlPath}"
+                bat 'git commit -m "Update Docker image tag in deployment.yml"'
+                withCredentials([usernamePassword(credentialsId: 'githubpwd', passwordVariable: 'pass', usernameVariable: 'user')]) {
+                       bat "git push https://$GITHUB_TOKEN@github.com/ARCHIT1607/3-tier-argocd-config.git main"
                     }
+                
                 }
             }
         }
