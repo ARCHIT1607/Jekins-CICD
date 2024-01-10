@@ -91,7 +91,7 @@ pipeline {
                     bat "git add ${deploymentYamlPath}"
                     bat 'git commit -m "Update Docker image tag in deployment.yml"'
                     withCredentials([usernamePassword(credentialsId: 'githubpwd', passwordVariable: 'pass', usernameVariable: 'user')]) {
-                        bat "git push http://$user:$pass@github.com/ARCHIT1607/3-tier-argocd-config.git main"
+                        bat "git push http://$user:$pass@github.com/ARCHIT1607/3-tier-argocd-config.git main:refs/heads/main"
                     }
                 }
             }
