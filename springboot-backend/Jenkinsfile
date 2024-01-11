@@ -1,106 +1,116 @@
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        DOCKER_HUB_CREDENTIALS = credentials('dockerpwd')
-        DOCKER_IMAGE_NAME = 'architdev/spring-backend'
-        GITHUB_TOKEN = credentials('github_cred')
+  environment {
+    DOCKER_HUB_CREDENTIALS = credentials('dockerpwd')
+    DOCKER_IMAGE_NAME = 'architdev/spring-backend'
+    GITHUB_TOKEN = credentials('github_cred')
+  }
+
+  stages {
+
+    stage('Clean Workspace') {
+      steps {
+        cleanWs()
+      }
     }
 
-    stages {
-
-        stage('Clean Workspace') {
-            steps {
-                cleanWs()
-            }
-        }
-
-        stage('Checkout SCM') {
-            steps {
-                checkout scmGit(branches: [[name: '*/deploy']], extensions: [], userRemoteConfigs: [[credentialsId: 'githubpwd', url: 'https://github.com/ARCHIT1607/Jekins-CICD.git']])
-            }
-        }
-
-        stage('docker build & Tag') {
-            steps {
-                script {
-                    def currentBuildNumber = env.BUILD_NUMBER
-                    def dockerImageName = 'architdev/spring-backend'
-                    def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
-                    dir('springboot-backend') {
-                        // Use double quotes to allow variable interpolation
-                        bat "docker build -t ${dockerImageTag} ."
-                    }
-                }
-            }
-        }
-
-        stage('docker push to registry') {
-            steps {
-                script {
-                    def currentBuildNumber = env.BUILD_NUMBER
-                    def dockerImageName = 'architdev/spring-backend'
-                    def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
-                    // Log in to Docker Hub using credentials
-                    withCredentials([string(credentialsId: 'dockerpwd', variable: 'DOCKER_HUB_CREDENTIALS')]) {
-                        bat "docker login -u architdev -p ${DOCKER_HUB_CREDENTIALS}"
-                    }
-
-                    // Push Docker image to Docker Hub
-                    bat "docker push ${dockerImageTag}"
-                }
-            }
-        }
-
-        stage('Delete Docker Images'){
-            
-            steps {
-                
-               script{
-                def currentBuildNumber = env.BUILD_NUMBER
-                def dockerImageName = 'architdev/spring-backend'
-                def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
-                 bat "docker rmi ${dockerImageTag}"
-               }
-            }
-        }
-
-         stage('Update Deployment YAML') {
-            steps {
-                
-                script {
-                def currentBuildNumber = env.BUILD_NUMBER
-                def dockerImageName = 'architdev/spring-backend'
-                def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
-                def githubTokenCredentials = credentials('githubpwd')
-                git branch: 'main', credentialsId: 'githubpwd', url: 'https://github.com/ARCHIT1607/3-tier-argocd-config.git'
-
-                    // Update the deployment.yml file with the new Docker image tag
-                   
-
-                    // Replace the image field in deployment.yml with the new Docker image tag
-                def deploymentYamlPath = 'Dev/spring-backend-deployment.yml'
-                powershell "Get-Content ${deploymentYamlPath}"
-
-            // Update the deployment.yml file with the new Docker image tag using PowerShell
-                powershell "(Get-Content ${deploymentYamlPath}) -replace 'architdev/spring-backend.*', '${dockerImageTag}' | Set-Content ${deploymentYamlPath}"
-
-            // Display the content of deployment.yml after replacement
-                powershell "Get-Content ${deploymentYamlPath}"
-
-
-                    // Commit and push the changes back to the deployment Git repo
-                    
-              
-                bat "git add ${deploymentYamlPath}"
-                bat 'git commit -m "Update Docker image tag in deployment.yml"'
-                withCredentials([usernamePassword(credentialsId: 'githubpwd', passwordVariable: 'pass', usernameVariable: 'user')]) {
-                       bat "git push https://$GITHUB_TOKEN@github.com/ARCHIT1607/3-tier-argocd-config.git main"
-                    }
-                
-                }
-            }
-        }
-        
+    stage('Checkout SCM') {
+      steps {
+        checkout scmGit(branches: [
+          [name: '*/deploy']
+        ], extensions: [], userRemoteConfigs: [
+          [credentialsId: 'githubpwd', url: 'https://github.com/ARCHIT1607/Jekins-CICD.git']
+        ])
+      }
     }
+
+    stage('Run Test') {
+      steps {
+        dir('springboot-backend') {
+          // Use double quotes to allow variable interpolation
+          bat "mvn test"
+        }
+      }
+    }
+
+    stage('docker build & Tag') {
+      steps {
+        script {
+          def currentBuildNumber = env.BUILD_NUMBER
+          def dockerImageName = 'architdev/spring-backend'
+          def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
+          dir('springboot-backend') {
+            // Use double quotes to allow variable interpolation
+            bat "docker build -t ${dockerImageTag} ."
+          }
+        }
+      }
+    }
+
+    stage('docker push to registry') {
+      steps {
+        script {
+          def currentBuildNumber = env.BUILD_NUMBER
+          def dockerImageName = 'architdev/spring-backend'
+          def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
+          // Log in to Docker Hub using credentials
+          withCredentials([string(credentialsId: 'dockerpwd', variable: 'DOCKER_HUB_CREDENTIALS')]) {
+            bat "docker login -u architdev -p ${DOCKER_HUB_CREDENTIALS}"
+          }
+
+          // Push Docker image to Docker Hub
+          bat "docker push ${dockerImageTag}"
+        }
+      }
+    }
+
+    stage('Delete Docker Images') {
+
+      steps {
+
+        script {
+          def currentBuildNumber = env.BUILD_NUMBER
+          def dockerImageName = 'architdev/spring-backend'
+          def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
+          bat "docker rmi ${dockerImageTag}"
+        }
+      }
+    }
+
+    stage('Update Deployment YAML') {
+      steps {
+
+        script {
+          def currentBuildNumber = env.BUILD_NUMBER
+          def dockerImageName = 'architdev/spring-backend'
+          def dockerImageTag = "${dockerImageName}:${currentBuildNumber}"
+          def githubTokenCredentials = credentials('githubpwd')
+          git branch: 'main', credentialsId: 'githubpwd', url: 'https://github.com/ARCHIT1607/3-tier-argocd-config.git'
+
+          // Update the deployment.yml file with the new Docker image tag
+
+          // Replace the image field in deployment.yml with the new Docker image tag
+          def deploymentYamlPath = 'Dev/spring-backend-deployment.yml'
+          powershell "Get-Content ${deploymentYamlPath}"
+
+          // Update the deployment.yml file with the new Docker image tag using PowerShell
+          powershell "(Get-Content ${deploymentYamlPath}) -replace 'architdev/spring-backend.*', '${dockerImageTag}' | Set-Content ${deploymentYamlPath}"
+
+          // Display the content of deployment.yml after replacement
+          powershell "Get-Content ${deploymentYamlPath}"
+
+          // Commit and push the changes back to the deployment Git repo
+
+          bat "git add ${deploymentYamlPath}"
+          bat 'git commit -m "Update Docker image tag in deployment.yml"'
+          withCredentials([usernamePassword(credentialsId: 'githubpwd', passwordVariable: 'pass', usernameVariable: 'user')]) {
+            bat "git push https://$GITHUB_TOKEN@github.com/ARCHIT1607/3-tier-argocd-config.git main"
+          }
+
+        }
+      }
+    }
+
+  }
 }
